@@ -4,5 +4,105 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Usuarios</h2>
+<ol class="breadcrumb mb-4 mt-4">
+    <li class="breadcrumb-item"><a href="index.html">Resumen</a></li>
+    <li class="breadcrumb-item active">Usuarios</li>
+</ol>
 
+
+<div class="card">
+    <div class="card-header">
+        <i class="fa fa-users me-1"></i> Lista de Usuarios
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-12">
+                <button type="button" class="btn btn-success"> Crear nuevo </button>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+    <table id="tablaUsuario" class="display cell-borner" style="width:100%">
+        <thead>
+            <tr>
+                <th> Nombre</th>
+                <th> Correo</th>
+                <th>Direccion</th>
+                <th>Telefono</th>
+                <th>Fecha de Registro</th>                
+                <th>Cedula</th>
+                <th>Activo</th>
+                <th></th>
+                <th></th>
+
+
+                
+               
+
+
+            </tr>
+
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+
+
+        jQuery.ajax({
+            url: '@Url.Action("ObtenerUsuarios", "Home")',
+            type: "GET",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8",
+            success: function (data) {
+
+               console.log(data)
+            },
+        })
+
+        var tablaUsuario = $("#tablaUsuario").DataTable({
+            Responsesive: true,
+            ordering: false,
+            "ajax": {
+                url: '@Url.Action("ObtenerUsuarios", "Home")',
+                type: "GET",
+                dataType: "json",
+
+            },
+            "columns": [
+                { "data": "Nombre" },
+                { "data": "Email" },
+                { "data": "Direccion" },
+                { "data": "Telefono" },
+                { "data": "FechaRegistro" },
+                { "data": "Cedula" },
+                {
+                    "data": "Activo", "render": function (valor) {
+                        if (valor) {
+                            return '<span class="badge bg-success">Si</span>';
+
+                        }
+                        else {
+                            return '<span class="badge bg-danger">No</span>';
+
+                        }
+
+                    } 
+                                        
+                },
+                {
+                    "defaultContent": '<button type="button" class="btn btn-primary btn-sm"><i class="fa fa-pen "></i></button>' +
+                        '<button type="button" class="btn btn-danger btn-sm ms-2"><i class="fa fa-trash"></i></button>',
+                    "orderable": false,
+                    "searchable": false,
+                        "width": "90px"
+                }
+            ],
+        });
+
+    </script>
+    
+}
