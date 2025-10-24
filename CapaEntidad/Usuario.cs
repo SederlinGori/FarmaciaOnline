@@ -18,5 +18,6 @@ namespace CapaEntidad
         public DateTime FechaRegistro { get; set; }
         public string Cedula { get; set; }
         public bool Activo { get; set; }
+        public int genero { get; set; }
     }
 }

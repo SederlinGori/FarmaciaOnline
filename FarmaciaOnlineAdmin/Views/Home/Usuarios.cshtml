@@ -17,29 +17,25 @@
     <div class="card-body">
         <div class="row">
             <div class="col-12">
-                <button type="button" class="btn btn-success"> Crear nuevo </button>
+                <button type="button" class="btn btn-success" onclick="abirmodal(null)"> Crear nuevo </button>
             </div>
         </div>
     </div>
 
     <hr />
-    <table id="tablaUsuario" class="display cell-borner" style="width:100%">
+    <table id="tablaUsuario" class="display cell-borner table table-borderless " style="width:100%">
         <thead>
             <tr>
                 <th> Nombre</th>
+                <th>Genero</th>
                 <th> Correo</th>
                 <th>Direccion</th>
                 <th>Telefono</th>
-                <th>Fecha de Registro</th>                
+                <th>Fecha de Registro</th>
                 <th>Cedula</th>
                 <th>Activo</th>
                 <th></th>
                 <th></th>
-
-
-                
-               
-
 
             </tr>
 
@@ -48,22 +44,114 @@
     </table>
 </div>
 
-@section Scripts {
-    <script>
+<!-- Modal -->
+<div class="modal fade" id="FormModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true" >
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-black text-white">
+                <h5 class="modal-title" id="staticBackdropLabel">Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body " >
+
+               <input id="txtId" type="hidden" value="0"/>
+
+                <div class="row g-2">
+
+                    <div class="col-sm-6">
+                        <label for="exampleFormControlImput" class="form-label">Nombre completo</label>
+                        <input type="text" class="form-control" id="txtNombre" autocomplete="off">
+                    </div>
+
+                    <div class="col-sm-6">
+                        <label for="exampleFormControlImput" class="form-label ">Genero</label>
+                        <select class="form-select" aria-label="Default select example" id="cboGenero">
+                            <option value="0">Prefiero no decirlo</option>
+                            <option value="1">Masculino</option>
+                            <option value="2">Femenino</option>
+                        </select>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <label for="exampleFormControlImput" class="form-label">Cedula </label>
+                        <input type="text" class="form-control" id="txtcedula" autocomplete="off" >
+                    </div>
+
+                    <div class="col-sm-6">
+                        <label for="exampleFormControlImput" class="form-label">Email </label>
+                        <input type="email" class="form-control" id="txtEmail" placeholder="name@example.com" autocomplete="off">
+                    </div>
+
+                    <div class="col-sm-6">
+                        <label for="exampleFormControlImput" class="form-label">Direccion</label>
+                        <input type="text" class="form-control" id="txtDireccion" autocomplete="off">
+                    </div>
+
+                    <div class="col-sm-6">
+                        <label for="exampleFormControlImput" class="form-label ">Telefono</label>
+                        <input type="tel" class="form-control" id="txtTelefono" autocomplete="off">
+                    </div>
+
+                    <div class="col-sm-6">
+                        <label for="exampleFormControlImput" class="form-label ">Activo</label>
+                        <select class="form-select" aria-label="Default select example" id="cboActivo">
+                            <option value="1">Si</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <label for="exampleFormControlImput" class="form-label ">Fecha de Registro</label>
+                        <input type="date" class="form-control" id="txtfecha">
+                    </div>
+
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <div id="mensajeError"class="alert alert-danger" role="alert">
+                                A simple danger alert—check it out!
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="guardar()">Guardar</button>
+            </div>
+        </div>
+    </div>
+ </div>
+
+    @section Scripts {
+        <script>
+
+            function formatDateFromServer(value) {
+                if (!value) return '';
+                var date;
+                // Formato MS: /Date(123456789000)/
+                var msMatch = /\/Date\((-?\d+)\)\//.exec(value);
+                if (msMatch) {
+                    date = new Date(parseInt(msMatch[1], 10));
+                } else {
+                    // ISO u otros formatos compatibles con Date
+                    date = new Date(value);
+                }
+                if (isNaN(date)) return value; // devuelve el valor original si no es fecha válida
+                var day = ('0' + date.getDate()).slice(-2);
+                var month = ('0' + (date.getMonth() + 1)).slice(-2);
+                var year = date.getFullYear();
+                return day + '/' + month + '/' + year;
+            }
 
 
-        jQuery.ajax({
-            url: '@Url.Action("ObtenerUsuarios", "Home")',
-            type: "GET",
-            dataType: "json",
-            contentType: "application/json; charset=utf-8",
-            success: function (data) {
+            var filaseleccionada;
+            var tablaUsuario;
 
-               console.log(data)
-            },
-        })
 
-        var tablaUsuario = $("#tablaUsuario").DataTable({
+        tablaUsuario = $("#tablaUsuario").DataTable({
             Responsesive: true,
             ordering: false,
             "ajax": {
@@ -74,10 +162,34 @@
             },
             "columns": [
                 { "data": "Nombre" },
+                {
+                    "data": "genero",
+                    "render": function (valor, type, row) {
+                        if (type === 'display' || type === 'filter') {
+                            var v = (valor !== undefined && valor !== null) ? String(valor) : String(row.genero ?? row.Genero ?? '');
+                            switch (v) {
+                                case "0": return 'Prefiero no decirlo';
+                                case "1": return 'Masculino';
+                                case "2": return 'Femenino';
+                                default: return '';
+                            }
+                        }
+                        return valor;
+                    }
+                },
                 { "data": "Email" },
                 { "data": "Direccion" },
                 { "data": "Telefono" },
-                { "data": "FechaRegistro" },
+                {
+                    "data": "FechaRegistro",
+                    "render": function (data, type, row) {
+                        // Para ordenación/filtrado puedes devolver el valor raw; para display usar el formateado
+                        if (type === 'display' || type === 'filter') {
+                            return formatDateFromServer(data);
+                        }
+                        return data;
+                    }
+                },
                 { "data": "Cedula" },
                 {
                     "data": "Activo", "render": function (valor) {
@@ -90,19 +202,169 @@
 
                         }
 
-                    } 
-                                        
+                    }
+
                 },
                 {
-                    "defaultContent": '<button type="button" class="btn btn-primary btn-sm"><i class="fa fa-pen "></i></button>' +
+                    "defaultContent": '<button type="button" class="btn btn-primary btn-sm btn-editar"><i class="fa fa-pen "></i></button>' +
                         '<button type="button" class="btn btn-danger btn-sm ms-2"><i class="fa fa-trash"></i></button>',
                     "orderable": false,
                     "searchable": false,
-                        "width": "90px"
+                    "width": "90px"
                 }
             ],
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/2.3.4/i18n/es-ES.json"
+
+            }
         });
 
-    </script>
-    
-}
+            // Auxiliares
+            function toInputDate(value) {
+                if (!value) return '';
+                var msMatch = /\/Date\((-?\d+)\)\//.exec(value);
+                var date = msMatch ? new Date(parseInt(msMatch[1], 10)) : new Date(value);
+                if (isNaN(date)) return '';
+                var day = ('0' + date.getDate()).slice(-2);
+                var month = ('0' + (date.getMonth() + 1)).slice(-2);
+                var year = date.getFullYear();
+                return year + '-' + month + '-' + day;
+            }
+
+            // abirmodal corregida y con logs
+            function abirmodal(json) {
+                console.log('abirmodal input:', json);
+                if (json != null) {
+                    var idVal = (json.UsuarioID !== undefined && json.UsuarioID !== null) ? json.UsuarioID
+                        : (json.UsuarioId !== undefined && json.UsuarioId !== null) ? json.UsuarioId : 0;
+                    $('#txtId').val(idVal);
+
+                    $('#txtNombre').val(json.Nombre || '');
+
+                    // leer 'genero' (minúscula) o 'Genero' (mayúscula)
+                    var generoVal = (json.genero !== undefined && json.genero !== null) ? json.genero
+                        : (json.Genero !== undefined && json.Genero !== null) ? json.Genero : '';
+                    $('#cboGenero').val(String(generoVal));
+
+                    $('#txtcedula').val(json.Cedula || '');
+                    $('#txtEmail').val(json.Email || '');
+                    $('#txtDireccion').val(json.Direccion || '');
+                    $('#txtTelefono').val(json.Telefono || '');
+
+                    // Activo: acepta booleano, número o string
+                    var activoVal = (json.Activo === true || json.Activo === 1 || json.Activo === "1") ? "1"
+                        : (json.Activo === false || json.Activo === 0 || json.Activo === "0") ? "0" : "";
+                    $('#cboActivo').val(activoVal);
+
+
+
+                    $('#txtfecha').val(toInputDate(json.FechaRegistro));
+
+                } else {
+                    // nuevo registro -> valores por defecto
+                    $('#txtId').val('0');
+                    $('#txtNombre').val('');
+                    $('#cboGenero').val('');
+                    $('#txtcedula').val('');
+                    $('#txtEmail').val('');
+                    $('#txtDireccion').val('');
+                    $('#txtTelefono').val('');
+                    $('#cboActivo').val('');
+                    $('#txtfecha').val('');
+                    $('#mensajeError').hide();
+                }
+                $('#FormModal').modal('show');
+            }
+
+
+            $("#tablaUsuario tbody").on("click", '.btn-editar', function () {
+
+                filaseleccionada = $(this).closest('tr');
+
+                var data = tablaUsuario.row(filaseleccionada).data();
+
+                abirmodal(data)
+
+              console.log(data)
+
+            });
+
+            function guardar() {
+
+                var usuario = {
+                    UsuarioID: parseInt($('#txtId').val()),
+                    Nombre: $('#txtNombre').val(),
+                    genero: parseInt($('#cboGenero').val()),
+                    Cedula: $('#txtcedula').val(),
+                    Email: $('#txtEmail').val(),
+                    Direccion: $('#txtDireccion').val(),
+                    Telefono: $('#txtTelefono').val(),
+                    Activo: $('#cboActivo').val() == 1 ? true:false,
+                    FechaRegistro: $('#txtfecha').val()
+                };
+                jQuery.ajax({
+
+                    url: '@Url.Action("GuardarUsuario", "Home")',
+                    type: "POST",
+                    data: JSON.stringify({ obj: usuario }),
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8",
+                    success: function (data) {
+
+                        //usuario nuevo
+
+                        if (usuario.UsuarioID == 0) {
+
+                            if (data.resultado != 0) {
+                                usuario.UsuarioID = data.resultado;
+
+                                $('#FormModal').modal('hide')
+                                tablaUsuario.row.add(usuario).draw(false);
+
+                            }
+                            else {
+
+                                $("#mensajeError").text(data.mensaje);
+                                $("#mensajeError").show();
+                            }
+
+                        }
+                        //usuario editar
+                        else {
+
+                            if (data.resultado) {
+                             
+                                tablaUsuario.row(filaseleccionada).data(usuario).draw(false);
+                                filaseleccionada = null;
+                                $('#FormModal').modal('hide')
+                                $('#mensajeError').hide();
+            
+                            }
+                            else {
+                                
+                                $("#mensajeError").text(data.mensaje);
+                                $("#mensajeError").show();
+                            }
+                        }
+                    },
+
+                    error: function (error) {
+                        console.log(error)
+                    },
+
+                    beforeSend: function () {
+
+                        $(".modal-body").LoadingOverlay("show", {
+                            imageResizeFactor: 2,
+                            text: "Cargando ... ",
+                            size: 14
+                        })
+                    },
+
+                });
+
+
+            }
+        </script>
+
+    }

@@ -29,6 +29,27 @@ namespace FarmaciaOnlineAdmin.Controllers
             return Json( new { data = olista }, JsonRequestBehavior.AllowGet);
         }
 
+        [HttpPost]
+        public JsonResult GuardarUsuario(Usuario obj)
+        {
+            object resultado;
+            string mensaje = string.Empty;
+
+            //verificar si es nuevo o edicion
+            if (obj.UsuarioID == 0)
+            {
+               resultado= new CN_Usuarios().Registrar(obj, out mensaje);
+
+            }
+            //edicion
+            else
+            {
+              
+                resultado = new CN_Usuarios().Editar(obj, out mensaje);
+               
+            }
+            return Json(new { resultado=resultado, mensaje= mensaje }, JsonRequestBehavior.AllowGet);
+        }
 
 
 
