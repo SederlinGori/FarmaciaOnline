@@ -107,7 +107,7 @@
 
                     <div class="row mt-2">
                         <div class="col-12">
-                            <div id="mensajeError"class="alert alert-danger" role="alert">
+                            <div id="mensajeError"class="alert alert-danger" role="alert" style="display:none;">
                                 A simple danger alert—check it out!
                             </div>
                         </div>
@@ -207,7 +207,7 @@
                 },
                 {
                     "defaultContent": '<button type="button" class="btn btn-primary btn-sm btn-editar"><i class="fa fa-pen "></i></button>' +
-                        '<button type="button" class="btn btn-danger btn-sm ms-2"><i class="fa fa-trash"></i></button>',
+                        '<button type="button" class="btn btn-danger btn-sm ms-2 btn-eliminar"><i class="fa fa-trash"></i></button>',
                     "orderable": false,
                     "searchable": false,
                     "width": "90px"
@@ -289,6 +289,55 @@
 
             });
 
+            $("#tablaUsuario tbody").on("click", '.btn-eliminar', function () {
+
+                var usuarioSeleccionado = $(this).closest('tr');
+
+
+                var data = tablaUsuario.row(usuarioSeleccionado).data();
+
+                swal({
+                    title: "Estas seguro?",
+                    text: "¿Desea eliminar a este usuario?",
+                    type: "warning",
+                    showCancelButton: true,
+                    confirmButtonClass: "btn-primary",
+                    confirmButtonText: "Si",
+                    cancelButtonText: "No",
+                    closeOnConfirm: true
+                },
+                    function () {
+
+                        jQuery.ajax({
+
+                            url: '@Url.Action("EliminarUsuario", "Home")',
+                            type: "POST",
+                            data: JSON.stringify({ id: data.UsuarioID }),
+                            dataType: "json",
+                            contentType: "application/json; charset=utf-8",
+                            success: function (data) {
+
+                                if (data.resultado) {
+
+                                    tablaUsuario.row(usuarioSeleccionado).remove().draw();
+                                }
+                                else {
+                                    swal("No se pudo eliminar el usuario", data.mensaje, "error");
+                                }
+                            },
+                            error: function (error) {
+                                console.log(error)
+                            }
+                            
+                        });
+                    });
+
+                console.log(data)
+
+
+            });
+
+
             function guardar() {
 
                 var usuario = {
@@ -311,6 +360,7 @@
                     contentType: "application/json; charset=utf-8",
                     success: function (data) {
 
+                        $(".modal-body").LoadingOverlay("hide");
                         //usuario nuevo
 
                         if (usuario.UsuarioID == 0) {
@@ -333,15 +383,15 @@
                         else {
 
                             if (data.resultado) {
-                             
+
                                 tablaUsuario.row(filaseleccionada).data(usuario).draw(false);
                                 filaseleccionada = null;
                                 $('#FormModal').modal('hide')
                                 $('#mensajeError').hide();
-            
+
                             }
                             else {
-                                
+
                                 $("#mensajeError").text(data.mensaje);
                                 $("#mensajeError").show();
                             }
@@ -349,7 +399,9 @@
                     },
 
                     error: function (error) {
-                        console.log(error)
+                        $("#mensajeError").texte("Error Ajax");
+                        $("#mensajeError").show();
+                        $(".modal-body").LoadingOverlay("hide");
                     },
 
                     beforeSend: function () {
