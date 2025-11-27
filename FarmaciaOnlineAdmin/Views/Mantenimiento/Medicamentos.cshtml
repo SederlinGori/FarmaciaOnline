@@ -31,7 +31,8 @@
                 <th> Marca</th>
                 <th> Categoria</th>
                 <th> Precio</th>
-                <th> Stock</th>
+                <th> Stock</th>                
+                <th> Receta</th>                
                 <th> Activo</th>
                 <th></th>
                 <th></th>
@@ -53,9 +54,10 @@
             </div>
 
             <div class="modal-body">
-                <input id="txtId" type="text" value="0" />
+                <input id="txtId" type="hidden" value="0" />
 
                 <form class="row" id="contenedor">
+
                     <div class="col-sm-3">
                         <div class="mb-2">
                             <img id="img_medicamento" height="197" width="200" class="border rounded mx-auto d-block img-fluid" />
@@ -76,14 +78,11 @@
                         </div>
                     </div>
 
+                    <!-- Marca + Precio + Stock -->
                     <div class="col-sm-3">
                         <div class="mb-3">
                             <label class="form-label">Marca</label>
                             <select id="cboMarca" class="form-select"></select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Categoria</label>
-                            <select id="cboCategoria" class="form-select"></select>
                         </div>
 
                         <div class="mb-3">
@@ -95,28 +94,42 @@
                             <label class="form-label">Stock</label>
                             <input type="number" class="form-control" id="txtstock" name="stock" />
                         </div>
-
-                        <div class="row g-1">
-                            <div class="col-sm-6">
-                                <label class="form-label">Activo</label>
-                                <select class="form-select" id="cboActivo">
-                                    <option value="1">Si</option>
-                                    <option value="0">No</option>
-                                </select>
-                            </div>
-                        </div>
                     </div>
-                </form>
 
-                <!--Mensaje de alerta-->
-                <div class="row mt-2">
-                    <div class="col-12">
-                        <div id="mensajeError" class="alert alert-danger" role="alert" style="display:none;">
-                            A simple danger alert—check it out!
+                    <!-- Categoria + Receta + Activo -->
+                    <div class="col-sm-3">
+                        <div class="mb-3">
+                            <label class="form-label">Categoria</label>
+                            <select id="cboCategoria" class="form-select"></select>
                         </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Receta</label>
+                            <select class="form-select" id="cboReceta">
+                                <option value="1">Si</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>                 
+
+                    <div class="mb-3">
+                        <label class="form-label">Activo</label>
+                        <select class="form-select" id="cboActivo">
+                            <option value="1">Si</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                </div>
+           </form>
+
+            <!--Mensaje de alerta-->
+            <div class="row mt-2">
+                <div class="col-12">
+                    <div id="mensajeError" class="alert alert-danger" role="alert" style="display:none;">
+
                     </div>
                 </div>
             </div>
+        </div>
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -153,17 +166,39 @@
             Responsesive: true,
             ordering: false,
             "ajax": {
-                url: '@Url.Action("ListarMarca", "Mantenimiento")',
+                url: '@Url.Action("ListarMedicamentos", "Mantenimiento")',
                 type: "GET",
                 dataType: "json",
 
             },
-            "columns": [
-                { "data": "Descripcion" },
 
+            "columns": [
+
+                { "data": "Nombre" },
+                { "data": "Descripcion" },
                 {
-                    // usar el nombre exacto que devuelve el JSON (modelo C# tiene 'activo' minúscula)
-                    "data": "activo",
+                    "data": "oMarca", "render": function (data) {
+                        return data.Descripcion;
+                    }
+                },
+                {
+                    "data": "oCategoria", "render": function (data) {
+                        return data.Descripcion;
+                    }
+                },
+                { "data": "Precio" },
+                { "data": "Stock" },
+                { "data": "RequiereReceta",
+                    "render": function (valor) {
+                        if (valor) {
+                            return '<span class="badge bg-success">Si</span>';
+                        } else {
+                            return '<span class="badge bg-danger">No</span>';
+                        }
+                    }
+                },
+
+                {"data": "Activo",
                     "render": function (valor) {
                         if (valor) {
                             return '<span class="badge bg-success">Si</span>';
@@ -184,6 +219,9 @@
                 "url": "//cdn.datatables.net/plug-ins/2.3.4/i18n/es-ES.json"
 
             }
+            
+
+           
         });
 
         jQuery.ajax({
@@ -203,6 +241,7 @@
                     $("<option>").attr({ "value": valor.MarcaID }).text(valor.Descripcion).appendTo("#cboMarca")
 
                 })
+                   
             },
             error: function (error) {
               console.log(data)
@@ -232,6 +271,53 @@
             },
         });
 
+        //validar precio
+        jQuery.validator.addMethod("validarPrecio", function (value, element) {
+            return this.optional(element) || /^(\d+)(\.\d{1,2})?$/.test(value);
+        }, "Ingrese un precio valido");
+
+
+
+
+        $("#contenedor").validate({
+            rules: {
+                nombre: {
+                    required: true,
+
+                },
+                precio: {
+                    required: true,
+                    validarPrecio: true,
+
+                },
+                stock: {
+                    required: true,
+                    digits: true,
+                    min: 0,
+                      number: true
+                }
+            },
+            messages: {
+                nombre: {
+                    required: "El nombre es obligatorio",
+                },
+                precio: {
+                    required: "El precio es obligatorio",
+                    validarPrecio: "Ingrese un precio valido"
+
+                },
+                stock: {
+                    required: "El stock es obligatorio",
+                    digits: "Ingrese un valor valido",
+                    min: "El stock no puede ser negativo",
+                    validarPrecio: "Ingrese solo numeros"
+                }
+            },
+            errorElement: "div",
+            errorLabelContainer: ".alert-danger",
+
+        });
+
 
 
         function abirmodal(json) {
@@ -246,6 +332,7 @@
             $("#cboCategoria").val($("#cboCategoria option:first").val());
             $("#txtPrecio").val("");
             $("#txtstock").val("");
+            $("#cboReceta").val(1);
             $("#cboActivo").val(1);
 
 
@@ -259,8 +346,35 @@
                 $("#cboCategoria").val(json.oCategoria.CategoriaID);
                 $("#txtPrecio").val(json.Precio);
                 $("#txtstock").val(json.Stock);
+                $("#cboReceta").val(json.RequiereReceta == true ? 1 : 0);
+                $("#cboActivo").val(json.Activo == true ? 1 : 0);
 
-                $("#cboActivo").val(json.activo == true ? 1 : 0);
+                 jQuery.ajax({
+                     url: '@Url.Action("imagenproducto", "Mantenimiento")',
+                     type: "POST",
+                     data: JSON.stringify({id:json.MedicamentoID}),
+                     dataType: "json",
+                     contentType: "application/json; charset=utf-8",
+
+                     success: function (data) {
+                         if (data.conversion) {
+                             $("#img_medicamento").attr({ "src" : "data:image/" + data.extension + ";base64," + data.texto_base64 });
+
+                         }
+                     },
+
+                     error: function (error) {
+                         $("#img_medicamento").LoadingOverlay("hide");
+                         $("#mensajeError").show();
+                         $("#mensajeError").text("Error al mostrar la imagen");
+
+                     },
+                     beforeSend: function () {
+
+                     },
+
+                 });
+
             }
 
             $('#FormModal').modal('show');
@@ -287,7 +401,7 @@
 
                 swal({
                     title: "Estas seguro?",
-                    text: "¿Desea eliminar a este Medicamento?",
+                    text: "¿Desea eliminar este medicamento?",
                     type: "warning",
                     showCancelButton: true,
                     confirmButtonClass: "btn-primary",
@@ -308,16 +422,15 @@
 
                                 if (data.resultado) {
 
-                                    tablamarca.row(marcaselecionada).remove().draw();
+                                    tablamarca.row(Medselecionado).remove().draw();
                                 }
                                 else {
-                                    swal("No se pudo eliminar la marca", data.mensaje, "error");
+                                    swal("No se pudo eliminar el medicamento", data.mensaje, "error");
                                 }
                             },
                             error: function (error) {
                                 console.log(error)
                             }
-                            //////
                         });
                     });
 
@@ -329,8 +442,13 @@
 
             function guardar() {
 
+                if (!$("#contenedor").valid()) {
+                    $("#mensajeError").text("Por favor complete los campos requeridos");
+                    $("#mensajeError").show();
+                    return;
+                }
                 var imagenseleccionada = $("#fileMedicamento")[0].files[0];
-               
+
                 var Medicamento = {
                     MedicamentoID: parseInt($('#txtId').val()),
                     Nombre: $('#txtNombre').val(),
@@ -346,13 +464,14 @@
                     Precio: parseFloat($("#txtPrecio").val()),
                     PrecioTexto: $("#txtPrecio").val(),
                     Stock: $("#txtstock").val(),
-                    activo: $("#cboActivo").val() == 1 ? true:false,
+                    RequiereReceta: $("#cboReceta").val() == 1 ? true:false,
+                    Activo: $("#cboActivo").val() == 1 ? true:false,
 
                 };
 
                 var request = new FormData();
                 request.append("obj",JSON.stringify(Medicamento))
-                request.append("imagen",imagenseleccionada) 
+                request.append("imagen",imagenseleccionada)
 
                 jQuery.ajax({
                     url: '@Url.Action("GuardarMedicamento", "Mantenimiento")',
@@ -414,10 +533,7 @@
                             size: 14
                         })
                     },
-
                 });
-
-
             }
     </script>
 }

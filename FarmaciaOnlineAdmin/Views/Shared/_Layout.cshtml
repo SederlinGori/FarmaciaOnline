@@ -22,7 +22,7 @@
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                     <li><a class="dropdown-item" href="#!">Correo</a></li>
                     <li><hr class="dropdown-divider" /></li>
-                    <li><a class="dropdown-item" href="#!">Cerrar sesion</a></li>
+                    <li><a class="dropdown-item" href="@Url.Action("Index","Acceso")">Cerrar sesion</a></li>
                 </ul>
             </li>
         </ul>
@@ -48,10 +48,7 @@
                             <div class="sb-nav-link-icon"><i class="fas fa-pills"></i></div>
                             Medicamentos
                         </a>
-                        <a class="nav-link" href="@Url.Action("pedidos", "Mantenimiento")">
-                            <div class="sb-nav-link-icon"><i class="fas fa-truck"></i></div>
-                            Pedidos
-                        </a>
+                        
                         <a class="nav-link" href="@Url.Action("categorias", "Mantenimiento")">
                             <div class="sb-nav-link-icon"><i class="fas fa-tags"></i></div>
                             Categorias

@@ -19,5 +19,6 @@ namespace CapaEntidad
         public string Cedula { get; set; }
         public bool Activo { get; set; }
         public int genero { get; set; }
+        public bool Restablecer { get; set; }
     }
 }

@@ -12,6 +12,7 @@ using System.IO;
 
 namespace FarmaciaOnlineAdmin.Controllers
 {
+    [Authorize]
     public class MantenimientoController : Controller
     {
         // GET: Mantenimiento
@@ -141,6 +142,7 @@ namespace FarmaciaOnlineAdmin.Controllers
             olista = new CN_Medicamentos().listar();
             return Json(new { data = olista }, JsonRequestBehavior.AllowGet);
         }
+
         [HttpPost]
         public JsonResult GuardarMedicamento(string obj, HttpPostedFileBase imagen)
         {

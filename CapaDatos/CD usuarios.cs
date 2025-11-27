@@ -18,7 +18,7 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    string query = "SELECT UsuarioID, Nombre,genero, Email, Contrasena, Direccion, Telefono, FechaRegistro, Cedula, Activo FROM Usuarios";
+                    string query = "SELECT UsuarioID, Nombre,genero, Email, Contrasena, Direccion, Telefono, FechaRegistro, Cedula, Activo, Restablecer  FROM Usuarios";
                     SqlCommand cmd = new SqlCommand(query, oconexion);
                     cmd.CommandType = CommandType.Text;
                     oconexion.Open();
@@ -36,8 +36,10 @@ namespace CapaDatos
                                 Telefono = dr["Telefono"].ToString(),
                                 FechaRegistro = Convert.ToDateTime(dr["FechaRegistro"]),
                                 Cedula = dr["Cedula"].ToString(),
-                                Activo = Convert.ToBoolean(dr["Activo"]),
-                                genero = Convert.ToInt32(dr["genero"])
+                                Activo = Convert.ToBoolean(dr["Activo"]),                                
+                                genero = Convert.ToInt32(dr["genero"]),
+                                Restablecer = dr["Restablecer"] == DBNull.Value ? false : Convert.ToBoolean(dr["Restablecer"])
+
 
                             });
                         }
@@ -145,5 +147,60 @@ namespace CapaDatos
             }
             return resultado;
         }
+
+        public bool CambiarClave(int idusuario,string nuevaclave, out string Mensaje)
+        {
+            bool resultado = false;
+            Mensaje = string.Empty;
+            try
+            {
+                using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
+                {
+                    SqlCommand cmd = new SqlCommand("update Usuarios set contrasena= @nuevaclave, Restablecer = 0 where Usuarioid= @idusuario ", oconexion);
+                    cmd.Parameters.AddWithValue("@idusuario", idusuario);                  
+                    cmd.Parameters.AddWithValue("@nuevaclave", nuevaclave);
+                    cmd.CommandType = CommandType.Text;
+                    oconexion.Open();
+                    resultado = cmd.ExecuteNonQuery() > 0 ? true : false;
+
+                }
+            }
+            catch (Exception ex)
+            {
+                resultado = false;
+                Mensaje = ex.Message;
+            }
+            return resultado;
+        }
+
+        public bool RestablecerClave(int idusuario, string clave, out string Mensaje)
+        {
+            bool resultado = false;
+            Mensaje = string.Empty;
+            try
+            {
+                using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
+                {
+                    SqlCommand cmd = new SqlCommand("update Usuarios set contrasena= @clave, Restablecer = 1 where Usuarioid= @idusuario ", oconexion);
+                    cmd.Parameters.AddWithValue("@idusuario", idusuario);
+
+                    cmd.Parameters.AddWithValue("@clave", clave);
+                    cmd.CommandType = CommandType.Text;
+                    oconexion.Open();
+                    resultado = cmd.ExecuteNonQuery() > 0 ? true : false;
+
+                }
+            }
+            catch (Exception ex)
+            {
+                resultado = false;
+                Mensaje = ex.Message;
+            }
+            return resultado;
+        }
+
+       
+       
+        
     }
 }

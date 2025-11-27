@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace CapaDatos
 {
@@ -19,60 +20,71 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                   StringBuilder sb= new StringBuilder();
-                     sb.AppendLine("select m.MedicamentoID, m.Nombre,m.Descripcion,");
-                        sb.AppendLine("n.MarcaID,n.Descripcion[DesMarca], ");
-                        sb.AppendLine("c.CategoriaID, c.Descripcion[DesCategoria],");
-                        sb.AppendLine("m.Precio,m.Stock, m.ImagenURL, m.NombreImagen, m.activo");
-                        sb.AppendLine("from Medicamentos m");
-                        sb.AppendLine("inner join Marcas n on n.MarcaID = m.MarcaID");
-                        sb.AppendLine("inner join Categorias c on c.CategoriaID = m.CategoriaID");
-                       
-                  
- 
-                    SqlCommand cmd = new SqlCommand(sb.ToString(), oconexion);
+                    StringBuilder sb = new StringBuilder();
+                    sb.AppendLine("SELECT m.MedicamentoID, m.Nombre, m.Descripcion AS DescripcionMed,");
+                    sb.AppendLine("       n.MarcaID, n.Descripcion AS DesMarca,");
+                    sb.AppendLine("       c.CategoriaID, c.Descripcion AS DesCategoria,");
+                    sb.AppendLine("       m.RequiereReceta, m.Precio, m.Stock,");
+                    sb.AppendLine("       m.ImagenURL, m.NombreImagen, m.activo");
+                    sb.AppendLine("FROM Medicamentos m");
+                    sb.AppendLine("INNER JOIN Marcas n ON n.MarcaID = m.MarcaID");
+                    sb.AppendLine("INNER JOIN Categorias c ON c.CategoriaID = m.CategoriaID");
+
+                    string sql = sb.ToString();
+
+                    // LOG: imprime el SQL (útil para ejecutar en SSMS y ver diferencias)
+                    Debug.WriteLine("SQL ListarMedicamentos: " + sql);
+
+                    SqlCommand cmd = new SqlCommand(sql, oconexion);
                     cmd.CommandType = CommandType.Text;
                     oconexion.Open();
                     using (SqlDataReader dr = cmd.ExecuteReader())
                     {
                         while (dr.Read())
                         {
+                            // helpers seguros para DBNull
+                            object GetValue(string col) => dr.IsDBNull(dr.GetOrdinal(col)) ? null : dr[col];
+
                             lista.Add(new Medicamentos()
                             {
-                                MedicamentoID = Convert.ToInt32(dr["MedicamentoID"]),
-                                Nombre = dr["Nombre"].ToString(),                               
-                                Descripcion = dr["Descripcion"].ToString(),
-                                Activo = Convert.ToBoolean(dr["activo"]),
-                                oMarca= new Marca()
-                                {
-                                    MarcaID = Convert.ToInt32(dr["MarcaID"]),
-                                    Descripcion= dr["DesMarca"].ToString()
-                                },
-                                oCategoria= new Categoria()
-                                {
-                                    CategoriaID = Convert.ToInt32(dr["CategoriaID"]),
-                                    Descripcion= dr["DesCategoria"].ToString()
-                                },
-                                Precio = Convert.ToSingle(dr["Precio"]),
-                                Stock = Convert.ToInt32(dr["Stock"]),
-                                ImagenURL = dr["ImagenURL"].ToString(),
-                                NombreImagen=dr["NombreImagen"].ToString()
+                                MedicamentoID = Convert.ToInt32(GetValue("MedicamentoID")),
+                                Nombre = (GetValue("Nombre") ?? "").ToString(),
+                                Descripcion = (GetValue("DescripcionMed") ?? "").ToString(),
+                                Activo = GetValue("activo") == null ? false : Convert.ToBoolean(GetValue("activo")),
+                                RequiereReceta = GetValue("RequiereReceta") == null ? false : Convert.ToBoolean(GetValue("RequiereReceta")),
 
-
+                                oMarca = new Marca()
+                                {
+                                    MarcaID = Convert.ToInt32(GetValue("MarcaID")),
+                                    Descripcion = (GetValue("DesMarca") ?? "").ToString()
+                                },
+                                oCategoria = new Categoria()
+                                {
+                                    CategoriaID = Convert.ToInt32(GetValue("CategoriaID")),
+                                    Descripcion = (GetValue("DesCategoria") ?? "").ToString()
+                                },
+                                Precio = GetValue("Precio") == null ? 0f : Convert.ToSingle(GetValue("Precio")),
+                                Stock = GetValue("Stock") == null ? 0 : Convert.ToInt32(GetValue("Stock")),
+                                ImagenURL = (GetValue("ImagenURL") ?? "").ToString(),
+                                NombreImagen = (GetValue("NombreImagen") ?? "").ToString()
                             });
                         }
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                lista = new List<Medicamentos>();
+                // Mostrar/registrar la excepción real — no ocultes el error
+                Debug.WriteLine("Error en listar(): " + ex.Message);
+                Debug.WriteLine(ex.StackTrace);
+                // opcional: lanzar la excepción para que en la capa superior se vea (o usar tu logger)
+                throw;
             }
             return lista;
-
         }
 
-    
+
+
 
         public int Registrar(Medicamentos obj, out string Mensaje)
         {
@@ -90,7 +102,7 @@ namespace CapaDatos
                     cmd.Parameters.AddWithValue("Stock", obj.Stock);
                     cmd.Parameters.AddWithValue("RequiereReceta", obj.RequiereReceta);
                     cmd.Parameters.AddWithValue("Activo", obj.Activo);
-                    cmd.Parameters.AddWithValue("CategotiaID", obj.oCategoria.CategoriaID);
+                    cmd.Parameters.AddWithValue("CategoriaID", obj.oCategoria.CategoriaID);
                     cmd.Parameters.AddWithValue("MarcaID", obj.oMarca.MarcaID);
                     cmd.Parameters.Add("Resultado", SqlDbType.Int).Direction = ParameterDirection.Output;
                     cmd.Parameters.Add("Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
@@ -119,13 +131,14 @@ namespace CapaDatos
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
                     SqlCommand cmd = new SqlCommand("sp_EditarMedicamento", oconexion);
+                    cmd.Parameters.AddWithValue("MedicamentoID", obj.MedicamentoID);
                     cmd.Parameters.AddWithValue("Nombre", obj.Nombre);
                     cmd.Parameters.AddWithValue("Descripcion", obj.Descripcion);
                     cmd.Parameters.AddWithValue("Precio", obj.Precio);
                     cmd.Parameters.AddWithValue("Stock", obj.Stock);
                     cmd.Parameters.AddWithValue("RequiereReceta", obj.RequiereReceta);
                     cmd.Parameters.AddWithValue("Activo", obj.Activo);
-                    cmd.Parameters.AddWithValue("CategotiaID", obj.oCategoria.CategoriaID);
+                    cmd.Parameters.AddWithValue("CategoriaID", obj.oCategoria.CategoriaID);
                     cmd.Parameters.AddWithValue("MarcaID", obj.oMarca.MarcaID);
                     cmd.Parameters.Add("Resultado", SqlDbType.Bit).Direction = ParameterDirection.Output;
                     cmd.Parameters.Add("Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
@@ -151,14 +164,12 @@ namespace CapaDatos
             {
                 using (SqlConnection oconexion = new SqlConnection(Conexion.cn))
                 {
-                    string query = "update Medicamentos set ImagenURL = @ImagenURL, NombreImagen=@NombreImagen where MedicamentoID = @MedicamentoID";
+                    string query = "update Medicamentos set ImagenURL = @ImagenURL, NombreImagen = @NombreImagen where MedicamentoID = @MedicamentoID";
 
                     SqlCommand cmd = new SqlCommand(query, oconexion);  
                     cmd.Parameters.AddWithValue("@ImagenURL", obj.ImagenURL);
-                    cmd.Parameters.AddWithValue(" @MedicamentoID", obj.MedicamentoID); 
-                    cmd.Parameters.AddWithValue(" @NombreImagen", obj.NombreImagen);
-                    cmd.Parameters.Add("Resultado", SqlDbType.Int).Direction = ParameterDirection.Output;
-                    cmd.Parameters.Add("Mensaje", SqlDbType.VarChar, 500).Direction = ParameterDirection.Output;
+                    cmd.Parameters.AddWithValue("@MedicamentoID", obj.MedicamentoID); 
+                    cmd.Parameters.AddWithValue("@NombreImagen", obj.NombreImagen);                    
                     cmd.CommandType = CommandType.Text;
 
                     oconexion.Open();

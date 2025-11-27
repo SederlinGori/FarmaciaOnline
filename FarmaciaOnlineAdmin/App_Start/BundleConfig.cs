@@ -17,6 +17,8 @@ namespace FarmaciaOnlineAdmin
                        "~/Scripts/DataTables/dataTables.responsive.js",
                        "~/Scripts/loadingoverlay/loadingoverlay.min.js",
                        "~/Scripts/sweetalert.min.js",
+                       "~/Scripts/jquery.validate.js",
+                       "~/Scripts/jquery-ui-1-14.1.js",
 
                        "~/Scripts/scripts.js"
                        ));
@@ -37,7 +39,8 @@ namespace FarmaciaOnlineAdmin
                 "~/Content/site.css",
                 "~/Content/DataTables/css/jquery.dataTables.css",
                 "~/Content/responsive.dataTables.css",
-                "~/Content/sweetalert.css"
+                "~/Content/sweetalert.css",
+                "~/Content/jquery-ui-1-14.1.css"
                 ));
         }
     }
