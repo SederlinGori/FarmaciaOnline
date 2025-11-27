@@ -28,99 +28,132 @@ namespace FarmaciaOnlineAdmin.Controllers
         [HttpPost]
         public ActionResult Index(string correo, string clave)
         {
+            string claveEncriptada = CN_Recursos.convertirSha256(clave);
 
-            Usuario oUsuario = new Usuario();
-            oUsuario = new CN_Usuarios().listar().Where(u => u.Email == correo && u.Contrasena == CN_Recursos.convertirSha256(clave)).FirstOrDefault();
+            // Buscar USUARIO
+            Usuario oUsuario = new CN_Usuarios().listar()
+                .FirstOrDefault(u => u.Email == correo && u.Contrasena == claveEncriptada);
 
-            if (oUsuario == null)
+            // Buscar CLIENTE
+            Cliente oCliente = new CN_cliente().listar()
+                .FirstOrDefault(c => c.Email == correo && c.Contrasena == claveEncriptada);
+
+
+            // Ninguno existe
+            if (oUsuario == null && oCliente == null)
             {
                 ViewBag.Error = "Correo o contraseña incorrecta";
                 return View();
             }
 
-            else
+            // ============================
+            //   LOGIN PARA USUARIO
+            // ============================
+            if (oUsuario != null)
             {
+                if (!oUsuario.Activo)
+                {
+                    ViewBag.Error = "La cuenta está suspendida temporalmente";
+                    return View();
+                }
+
+                Session["Tipo"] = "Usuario";
+                Session["Usuario"] = oUsuario;
+
+                // SOLO usuarios deben cambiar clave si Restablecer = true
                 if (oUsuario.Restablecer)
                 {
                     TempData["UsuarioID"] = oUsuario.UsuarioID;
                     return RedirectToAction("CambiarClave");
                 }
-
                 FormsAuthentication.SetAuthCookie(oUsuario.Email, false);
+                return RedirectToAction("Index","Home");
             }
-            ViewBag.Error = null;
-            return RedirectToAction("Index", "Home");
-        }
 
-        public ActionResult Registrar()
-        {
-            return View();
+            // ============================
+            //   LOGIN PARA CLIENTE
+            // ============================
+            Session["Tipo"] = "Cliente";
+            Session["Cliente"] = oCliente;
+
+            // Los clientes NO cambian clave al iniciar.
+            return RedirectToAction("Index","Tienda");
         }
+        
 
         [HttpPost]
-        public ActionResult CambiarClave(string idusuario, string claveactual, string nuevaclave, string confirmarclave)
-        {
-            Usuario oUsuario = new Usuario();
-            oUsuario = new CN_Usuarios().listar().Where(u => u.UsuarioID==int.Parse(idusuario)).FirstOrDefault();
-
+        public ActionResult CambiarClave(string idusuario, string claveactual, string nuevaclave, string confirmarclave) 
+        { 
+            Usuario oUsuario = new Usuario(); oUsuario = new CN_Usuarios().listar().Where(u => u.UsuarioID == int.Parse(idusuario)).FirstOrDefault(); 
             if (oUsuario.Contrasena != CN_Recursos.convertirSha256(claveactual))
-            {
-                TempData["UsuarioID"] = idusuario;
-                ViewData["vContrasena"] = "";
-                ViewBag.Error = "La contraseña actual es incorrecta";
-                return View();
-            }
+            { 
+                TempData["UsuarioID"] = idusuario; 
+                ViewData["vContrasena"] = ""; 
+                ViewBag.Error = "La contraseña actual es incorrecta"; 
+                return View(); 
+            
+            } 
             else if (nuevaclave != confirmarclave)
-            {
-                TempData["UsuarioID"] = idusuario;
-                ViewData["vContrasena"] = claveactual;
-                ViewBag.Error = "Las nuevas contraseñas no coinciden";
-                return View();
+            { 
+                TempData["UsuarioID"] = idusuario; 
+                ViewData["vContrasena"] = claveactual; 
+                ViewBag.Error = "Las nuevas contraseñas no coinciden"; 
+                return View(); 
             }
-            ViewData["vContrasena"] = null;
+            ViewData["vContrasena"] = null; 
+            nuevaclave = CN_Recursos.convertirSha256(nuevaclave); 
+            string mensaje = string.Empty; 
+            bool respuesta = new CN_Usuarios().CambiarClave(int.Parse(idusuario), nuevaclave, out mensaje); 
 
-            nuevaclave = CN_Recursos.convertirSha256(nuevaclave);
-            string mensaje = string.Empty;
-            bool respuesta = new CN_Usuarios().CambiarClave(int.Parse(idusuario), nuevaclave, out mensaje);
-
-            if (respuesta)
-            {
-                return RedirectToAction("Index");
+            if (respuesta) { 
+                return RedirectToAction("Index"); 
             }
-            else
-            {
-                TempData["UsuarioID"] = idusuario;
-                ViewBag.Error = mensaje;
-               return View();
-            }         
-                
-        }
+            else { TempData["UsuarioID"] = idusuario; ViewBag.Error = mensaje; return View(); } }
+
 
         [HttpPost]
         public ActionResult Restablecer(string correo)
         {
-            Usuario ousuario = new Usuario();
-            ousuario = new CN_Usuarios().listar().Where(item => item.Email == correo).FirstOrDefault();
-            if (ousuario == null) 
+            // Buscar USUARIO
+            Usuario oUsuario = new CN_Usuarios().listar()
+                .FirstOrDefault(u => u.Email == correo);
+
+            if (oUsuario != null)
             {
-                ViewBag.Error = "No se encontro un usuario realcionado a ese correo";
-                return View();
+                string mensaje;
+                bool ok = new CN_Usuarios().RestablecerClave(oUsuario.UsuarioID, correo, out mensaje);
+
+                if (!ok)
+                {
+                    ViewBag.Error = mensaje;
+                    return View();
+                }
+
+                return RedirectToAction("Index");
             }
 
-            string mensaje = string.Empty;
-            bool respuesta = new CN_Usuarios().RestablecerClave(ousuario.UsuarioID,correo, out mensaje);
+           
+            Cliente oCliente = new CN_cliente().listar()
+                .FirstOrDefault(c => c.Email == correo);
 
-            if (respuesta) 
+            if (oCliente != null)
             {
-                ViewBag.Error = null;
-                return RedirectToAction("Index"); 
+                string mensaje;
+                bool ok = new CN_cliente().RestablecerClave(oCliente.ClienteID, correo, out mensaje);
+
+                if (!ok)
+                {
+                    ViewBag.Error = mensaje;
+                    return View();
+                }
+
+                return RedirectToAction("Index");
             }
-            else
-            {
-                ViewBag.Error = mensaje;
-                return View();
-            }
+
+            ViewBag.Error = "No se encontró una cuenta asociada a este correo";
+            return View();
         }
+
 
         public ActionResult cerrarsesion()
         {

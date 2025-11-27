@@ -165,9 +165,11 @@
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
+    <Compile Include="Controllers\AccesoClienteController.cs" />
     <Compile Include="Controllers\AccesoController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\MantenimientoController.cs" />
+    <Compile Include="Controllers\TiendaController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -596,6 +598,8 @@
     <Content Include="Scripts\jquery\jquery.slim.min.map" />
     <Content Include="Views\Acceso\CambiarClave.cshtml" />
     <Content Include="Views\Acceso\Restablecer.cshtml" />
+    <Content Include="Views\AccesoCliente\Registrar.cshtml" />
+    <Content Include="Views\Tienda\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Code\" />
